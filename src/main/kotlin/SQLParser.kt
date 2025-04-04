@@ -110,28 +110,29 @@ enum class TokenType {
  *
  * @property sql The SQL to parse.
  */
-internal class SQLParser(private val sql: String) {
+@Suppress("MemberVisibilityCanBePrivate")
+internal class SQLParser(val sql: String) {
 
     /**
      * Enable splitting of statements during parsing. Splitting is done on
      * semicolon characters, and is enabled by default.
      */
-    private var shouldSplit: Boolean = true
+    var shouldSplit: Boolean = true
 
-    private var tokens = mutableListOf<Token>()
-    private var statements = mutableListOf<ParsedStatement>()
+    var tokens = mutableListOf<Token>()
+    var statements = mutableListOf<ParsedStatement>()
 
-    private var pos = 0
-    private var line = 1
-    private var col = 1
-    private var start = 0
-    private var startStmt = 0
-    private var startLine = 1
-    private var startCol = 1
+    var pos = 0
+    var line = 1
+    var col = 1
+    var start = 0
+    var startStmt = 0
+    var startLine = 1
+    var startCol = 1
 
-    private var state = State.NORMAL
+    var state = State.NORMAL
 
-    private var delimiter: String = ""
+    var delimiter: String = ""
 
     /**
      * Run the parser and return a list of parsed statements.
