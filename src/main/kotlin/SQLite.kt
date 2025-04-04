@@ -4,16 +4,22 @@ import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 
+typealias SQLParams = Map<String, Any?>
+
 open class SQLiteException(msg: String) : IllegalStateException(msg)
 
 class SQLite(private val config: Config) : AutoCloseable {
-    private val conn: Connection
+    private val conn: Connection = DriverManager.getConnection(config.url)!!
+
+    /**
+     * The thread that owns the librarian is the only one allowed to use it.
+     * This is to ensure that the librarian is not used concurrently, which
+     * it's not designed for.
+     * Concurrent use of a data source on the other hand is fine.
+     */
+    private val owner: Thread = Thread.currentThread()
 
     private var nestCnt: Int = 0
-
-    init {
-        conn = DriverManager.getConnection(config.url)!!
-    }
 
     /**
      * Run the given [func] inside a transaction, committing if it succeeds
@@ -51,11 +57,223 @@ class SQLite(private val config: Config) : AutoCloseable {
         conn.close()
     }
 
+    /**
+     * Get the schema of the database, from the sqlite_schema table.
+     */
+    fun schema(): List<SchemaRow> {
+        val sql = "SELECT * FROM sqlite_schema"
+        return query(sql) { rs ->
+            val res = mutableListOf<SchemaRow>()
+            while (rs.next()) {
+                val row = SchemaRow(
+                    type = rs.getString("type")!!,
+                    name = rs.getString("name")!!,
+                    tblName = rs.getString("tbl_name")!!,
+                    rootpage = rs.getInt("rootpage"),
+                    sql = rs.getString("sql"),
+                )
+                res.add(row)
+            }
+            res
+        }
+    }
+
+    /**
+     * The lowest common denominator for every kind of sql execution.
+     * It ensures thread safety and helps with error handling.
+     */
+    private fun <T> exec(sql: String, func: (PreparedStatement) -> T): T {
+        val user = Thread.currentThread()
+        if (user != owner) {
+            val msg = "${config.name}: SQLite is not thread-safe: Owner=$owner User=$user"
+            throw SQLiteException(msg)
+        }
+
+        return try {
+            conn.prepareStatement(sql).use { ps ->
+                func(ps)
+            }
+        } catch (e: SQLException) {
+            val msg = "${config.name}: SQL error: ${e.message}\n${sql.trimIndent()}"
+            throw SQLiteException(msg)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    //
+    // Query
+    //
+    // -------------------------------------------------------------------------
+
+    /**
+     * Execute the sql query from [sql] with [params] and extract the result
+     * with [rse].
+     *
+     * If the query contains multiple statements, only the last one will
+     * return a result. The rest will be executed and discarded.
+     * If this is not the desired behaviour, check out [multiQuery].
+     */
+    fun <T> query(sql: String, params: SQLParams, rse: ResultSetExtractor<T>): T {
+        val stmts = sql.parse()
+
+        if (stmts.isEmpty() && sql.isBlank())
+            throw SQLiteException("${config.name}: Empty query")
+        else if (stmts.isEmpty() && sql.isNotBlank())
+            throw SQLiteException("${config.name}: Invalid query: $sql")
+
+        // Execute every statement, but the last one.
+        for (i in 0..stmts.size - 2) {
+            val (sql, params) = stmts[i].resolve(params)
+            exec(sql) { ps ->
+                setParameters(ps, params)
+                ps.execute()
+            }
+        }
+
+        val (sql, params) = stmts.last().resolve(params)
+        return exec(sql) { ps ->
+            setParameters(ps, params)
+            val rs = ps.executeQuery()
+            rse.extract(rs)
+        }
+    }
+
+    /**
+     * Execute the sql query from [src] and extract the result with [rse].
+     *
+     * If the query contains multiple statements, only the last one will
+     * return a result. The rest will be executed and discarded.
+     * If this is not the desired behaviour, check out [multiQuery].
+     */
+    fun <T> query(sql: String, rse: ResultSetExtractor<T>) =
+        query(sql, emptyMap(), rse)
+
+    /**
+     * Execute the sql query from [sql] with [params] and map the result to a
+     * list with [rm].
+     *
+     * If the query contains multiple statements, only the last one will
+     * return a result. The rest will be executed and discarded.
+     * If this is not the desired behaviour, check out [multiQuery].
+     */
+    fun <T> query(sql: String, params: SQLParams, rm: RowMapper<T>) =
+        query(sql, params, rm::mapAll)
+
+    /**
+     * Execute the sql query from [sql] and map the result to a list with [rm].
+     *
+     * If the query contains multiple statements, only the last one will
+     * return a result. The rest will be executed and discarded.
+     * If this is not the desired behaviour, check out [multiQuery].
+     */
+    fun <T> query(sql: String, rm: RowMapper<T>) =
+        query(sql, emptyMap(), rm::mapAll)
+
+
+    /**
+     * Execute all the sql statements from [src] with [params]. This should be
+     * used when there are multiple queries in [src], which requires multiple
+     * result sets to be extracted.
+     *
+     * The results are extracted using calling the extension [block] on a
+     * [MultiResult] which allows the caller to control the extraction of
+     * multiple result sets.
+     */
+    fun <T> multiQuery(sql: String, params: SQLParams, block: MultiResult.() -> T): T {
+        val stmts = sql.parse()
+
+        if (stmts.isEmpty() && sql.isBlank())
+            throw SQLiteException("${config.name}: Empty query")
+        else if (stmts.isEmpty() && sql.isNotBlank())
+            throw SQLiteException("${config.name}: Invalid query: $sql")
+
+        val sql = if (params.isEmpty())
+            stmts.joinToString("") { it.resolveSQL() }
+        else
+            stmts.joinToString("") { it.resolveSQL(params) }
+
+        val params = buildList {
+            if (params.isEmpty())
+                return@buildList
+            for (stmt in stmts)
+                addAll(stmt.resolveParams(params))
+        }.toTypedArray()
+
+        return exec(sql) { ps ->
+            setParameters(ps, params)
+            val hasResults = ps.execute()
+            val multiResult = MultiResult(hasResults, ps)
+            val res = multiResult.block()
+            check(!multiResult.hasResults()) {
+                "${config.name}: Multi query block did not consume all results"
+            }
+            res
+        }
+    }
+
+    /**
+     * Execute all the sql statements from [sql]. This should be
+     * used when there are multiple queries in [sql], which requires multiple
+     * result sets to be extracted.
+     *
+     * The results are extracted using calling the extension [block] on a
+     * [MultiResult] which allows the caller to control the extraction of
+     * multiple result sets.
+     */
+    fun <T> multiQuery(sql: String, block: MultiResult.() -> T) =
+        multiQuery(sql, emptyMap(), block)
+
+    // -------------------------------------------------------------------------
+    //
+    // Helpers
+    //
+    // -------------------------------------------------------------------------
+
+    /**
+     * Set the parameters of a prepared statement, properly handling [SQLValue]s.
+     */
+    private fun setParameters(ps: PreparedStatement, params: Array<out Any?>) {
+        if (params.isEmpty()) return
+
+        for ((i, p) in params.withIndex()) {
+            if (p is SQLValue<*>)
+                ps.setObject(i + 1, p.sqlValue())
+            else
+                ps.setObject(i + 1, p)
+        }
+    }
+
     data class Config(
         val url: String,
-        val name: String = url,
+        val name: String,
     )
+
+    data class SchemaRow(
+        val type: String,
+        val name: String,
+        val tblName: String,
+        val rootpage: Int,
+        val sql: String?,
+    ) {
+        val isTable: Boolean
+            get() = type == "table"
+
+        val isIndex: Boolean
+            get() = type == "index"
+
+        val isTrigger: Boolean
+            get() = type == "trigger"
+
+        val isView: Boolean
+            get() = type == "view"
+    }
 }
+
+// -------------------------------------------------------------------------
+//
+// RowMapper & ResultSetExtractor
+//
+// -------------------------------------------------------------------------
 
 /**
  * The interface used by [SQLite] for mapping rows of a [ResultSet]
@@ -94,6 +312,12 @@ fun interface ResultSetExtractor<T> {
      */
     fun extract(rs: ResultSet): T
 }
+
+// -------------------------------------------------------------------------
+//
+// MultiResult
+//
+// -------------------------------------------------------------------------
 
 /**
  * A helper class for extracting multiple results from a query.

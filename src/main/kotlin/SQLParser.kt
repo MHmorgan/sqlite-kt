@@ -26,7 +26,7 @@ class ParsedStatement(
      * Resolve the SQL and parameters for this statement based on the given
      * [params] map.
      */
-    fun resolve(params: Map<String, Any?>): Pair<String, Array<out Any?>> {
+    fun resolve(params: SQLParams): Pair<String, Array<out Any?>> {
         return if (params.isEmpty())
             resolveSQL() to emptyArray()
         else
@@ -42,7 +42,7 @@ class ParsedStatement(
      * Resolve the SQL of this statement with raw parameters (?) based on
      * the given [params] map.
      */
-    fun resolveSQL(params: Map<String, Any?>): String {
+    fun resolveSQL(params: SQLParams): String {
         return tokens.joinToString("") {
             if (it.type == TokenType.CODE)
                 return@joinToString it.content
@@ -67,7 +67,7 @@ class ParsedStatement(
      * based on the given [params] map, to match the raw parameters (?)
      * in the SQL.
      */
-    fun resolveParams(params: Map<String, Any?>): Array<out Any?> {
+    fun resolveParams(params: SQLParams): Array<out Any?> {
         return tokens
             .filter { it.type == TokenType.PARAM }
             .flatMap {
@@ -110,28 +110,28 @@ enum class TokenType {
  *
  * @property sql The SQL to parse.
  */
-internal class SQLParser(val sql: String) {
+internal class SQLParser(private val sql: String) {
 
     /**
      * Enable splitting of statements during parsing. Splitting is done on
      * semicolon characters, and is enabled by default.
      */
-    var shouldSplit: Boolean = true
+    private var shouldSplit: Boolean = true
 
-    var tokens = mutableListOf<Token>()
-    var statements = mutableListOf<ParsedStatement>()
+    private var tokens = mutableListOf<Token>()
+    private var statements = mutableListOf<ParsedStatement>()
 
-    var pos = 0
-    var line = 1
-    var col = 1
-    var start = 0
-    var startStmt = 0
-    var startLine = 1
-    var startCol = 1
+    private var pos = 0
+    private var line = 1
+    private var col = 1
+    private var start = 0
+    private var startStmt = 0
+    private var startLine = 1
+    private var startCol = 1
 
-    var state = State.NORMAL
+    private var state = State.NORMAL
 
-    var delimiter: String = ""
+    private var delimiter: String = ""
 
     /**
      * Run the parser and return a list of parsed statements.
@@ -170,7 +170,7 @@ internal class SQLParser(val sql: String) {
         COMMENT
     }
 
-    fun normal() {
+    private fun normal() {
         when (next()) {
             ':' -> {
                 state = when {
@@ -219,7 +219,7 @@ internal class SQLParser(val sql: String) {
         }
     }
 
-    fun named() {
+    private fun named() {
         // Consume identifier characters until we hit a non-identifier char.
         if (isIdentifier(peek())) {
             next()
@@ -230,7 +230,7 @@ internal class SQLParser(val sql: String) {
         state = State.NORMAL
     }
 
-    fun delimited() {
+    private fun delimited() {
         // Skip escaped characters
         if (peek() == '\\') {
             next(2)
@@ -248,12 +248,12 @@ internal class SQLParser(val sql: String) {
         delimiter = ""
     }
 
-    fun peek(n: Int): Char {
+    private fun peek(n: Int): Char {
         val peekPos = pos + n - 1 // -1 because we're already at the next char
         return if (peekPos >= sql.length) 0.toChar() else sql[peekPos]
     }
 
-    fun peek(): Char = peek(1)
+    private fun peek(): Char = peek(1)
 
     fun next(): Char {
         if (pos >= sql.length) return 0.toChar()
@@ -276,15 +276,15 @@ internal class SQLParser(val sql: String) {
     // HELPERS
 
     // For some reason 0 is a valid identifier char, which we don't want...
-    fun isIdentifier(c: Char) = c.isJavaIdentifierPart() && c != 0.toChar()
+    private fun isIdentifier(c: Char) = c.isJavaIdentifierPart() && c != 0.toChar()
 
-    fun updateStart() {
+    private fun updateStart() {
         start = pos
         startLine = line
         startCol = col
     }
 
-    fun consumeStatement() {
+    private fun consumeStatement() {
         if (tokens.isNotEmpty()) {
             val s = sql.substring(startStmt, pos)
             if (s.isNotBlank())
@@ -294,11 +294,11 @@ internal class SQLParser(val sql: String) {
         tokens = mutableListOf()
     }
 
-    fun addCodeToken(content: String) {
+    private fun addCodeToken(content: String) {
         tokens.add(Token(TokenType.CODE, content, startLine, startCol))
     }
 
-    fun addParamToken(content: String) {
+    private fun addParamToken(content: String) {
         tokens.add(Token(TokenType.PARAM, content, startLine, startCol))
     }
 
