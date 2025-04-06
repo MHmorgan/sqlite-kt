@@ -20,8 +20,6 @@ $dokka.location:games.soloscribe.sqlite//getYearMonth/java.sql.ResultSet#kotlin.
 $dokka.location:games.soloscribe.sqlite//getZoneId/java.sql.ResultSet#kotlin.String/PointingToDeclaration/sqlite/games.soloscribe.sqlite/get-zone-id.md
 $dokka.location:games.soloscribe.sqlite//getZoneOffset/java.sql.ResultSet#kotlin.String/PointingToDeclaration/sqlite/games.soloscribe.sqlite/get-zone-offset.md
 $dokka.location:games.soloscribe.sqlite//getZonedDateTime/java.sql.ResultSet#kotlin.String#java.time.format.DateTimeFormatter?/PointingToDeclaration/sqlite/games.soloscribe.sqlite/get-zoned-date-time.md
-$dokka.location:games.soloscribe.sqlite//parse/kotlin.String#/PointingToDeclaration/sqlite/games.soloscribe.sqlite/parse.md
-$dokka.location:games.soloscribe.sqlite/ParsedSQL///PointingToDeclaration/sqlite/games.soloscribe.sqlite/-parsed-s-q-l/index.md
 $dokka.location:games.soloscribe.sqlite/ResultSetExtractor///PointingToDeclaration/sqlite/games.soloscribe.sqlite/-result-set-extractor/index.md
 $dokka.location:games.soloscribe.sqlite/ResultSetExtractor/extract/#java.sql.ResultSet/PointingToDeclaration/sqlite/games.soloscribe.sqlite/-result-set-extractor/extract.md
 $dokka.location:games.soloscribe.sqlite/RowMapper///PointingToDeclaration/sqlite/games.soloscribe.sqlite/-row-mapper/index.md
