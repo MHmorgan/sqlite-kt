@@ -13,7 +13,7 @@ plugins {
     `java-library`
 }
 
-group = "games.soloscribe.sqlite"
+group = "games.soloscribe"
 
 repositories {
     mavenCentral()
