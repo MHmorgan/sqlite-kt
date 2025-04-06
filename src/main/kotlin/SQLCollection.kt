@@ -1,3 +1,5 @@
+package games.soloscribe.sqlite
+
 import java.util.Objects
 
 /**

@@ -1,3 +1,5 @@
+package games.soloscribe.sqlite
+
 typealias ParsedSQL = List<ParsedStatement>
 
 fun String.parse(): ParsedSQL = SQLParser(this).parse()
@@ -17,6 +19,8 @@ fun String.parse(): ParsedSQL = SQLParser(this).parse()
  * types. While restrictive, it is necessary since ordering is important.
  * An unpredictable ordering of parameters could lead to subtle and
  * hard-to-debug errors.
+ *
+ * @suppress
  */
 class ParsedStatement(
     private val tokens: List<Token>,
@@ -26,7 +30,7 @@ class ParsedStatement(
      * Resolve the SQL and parameters for this statement based on the given
      * [params] map.
      */
-    fun resolve(params: SQLParams): Pair<String, Array<out Any?>> {
+    internal fun resolve(params: SQLParams): Pair<String, Array<out Any?>> {
         return if (params.isEmpty())
             resolveSQL() to emptyArray()
         else
@@ -36,13 +40,13 @@ class ParsedStatement(
     /**
      * Resolve the SQL if this statement without replacing parameters.
      */
-    fun resolveSQL() = tokens.joinToString("") { it.content }
+    internal fun resolveSQL() = tokens.joinToString("") { it.content }
 
     /**
      * Resolve the SQL of this statement with raw parameters (?) based on
      * the given [params] map.
      */
-    fun resolveSQL(params: SQLParams): String {
+    internal fun resolveSQL(params: SQLParams): String {
         return tokens.joinToString("") {
             if (it.type == TokenType.CODE)
                 return@joinToString it.content
@@ -67,7 +71,7 @@ class ParsedStatement(
      * based on the given [params] map, to match the raw parameters (?)
      * in the SQL.
      */
-    fun resolveParams(params: SQLParams): Array<out Any?> {
+    internal fun resolveParams(params: SQLParams): Array<out Any?> {
         return tokens
             .filter { it.type == TokenType.PARAM }
             .flatMap {
@@ -87,6 +91,8 @@ class ParsedStatement(
 
 /**
  * A token of a parsed sql statement.
+ *
+ * @suppress
  */
 data class Token(
     val type: TokenType,
@@ -95,6 +101,9 @@ data class Token(
     val col: Int,
 )
 
+/**
+ * @suppress
+ */
 enum class TokenType {
     CODE,
     PARAM
@@ -165,14 +174,13 @@ internal class SQLParser(val sql: String) {
     enum class State {
         NORMAL,
         PARAM,
-
-        // Delimited
         STRING,
         COMMENT
     }
 
-    private fun normal() {
+    fun normal() {
         when (next()) {
+            // Parameter
             ':' -> {
                 state = when {
                     isIdentifier(peek()) -> State.PARAM
@@ -188,6 +196,7 @@ internal class SQLParser(val sql: String) {
                 updateStart()
             }
 
+            // Statement delimiter
             ';' -> {
                 if (!shouldSplit) return
                 addCodeToken(sql.substring(start, pos))
@@ -195,11 +204,13 @@ internal class SQLParser(val sql: String) {
                 updateStart()
             }
 
+            // String quotes
             '\'', '"' -> {
                 delimiter = peek(0).toString()
                 state = State.STRING
             }
 
+            // SQL comments
             '-' -> {
                 if (peek() == '-') {
                     delimiter = "\n"
@@ -208,6 +219,7 @@ internal class SQLParser(val sql: String) {
                 }
             }
 
+            // C-style comments
             '/' -> {
                 delimiter = when (peek()) {
                     '*' -> "*/"
@@ -217,10 +229,19 @@ internal class SQLParser(val sql: String) {
                 state = State.COMMENT
                 next()
             }
+
+            // BEGIN block
+            'B' -> {
+                if (peek(0..4) == "BEGIN" && peek(5).isWhitespace()) {
+                    delimiter = "END"
+                    state = State.STRING
+                    next(5)
+                }
+            }
         }
     }
 
-    private fun named() {
+    fun named() {
         // Consume identifier characters until we hit a non-identifier char.
         if (isIdentifier(peek())) {
             next()
@@ -231,7 +252,7 @@ internal class SQLParser(val sql: String) {
         state = State.NORMAL
     }
 
-    private fun delimited() {
+    fun delimited() {
         // Skip escaped characters
         if (peek() == '\\') {
             next(2)
@@ -249,12 +270,28 @@ internal class SQLParser(val sql: String) {
         delimiter = ""
     }
 
-    private fun peek(n: Int): Char {
+    fun peek(n: Int): Char {
         val peekPos = pos + n - 1 // -1 because we're already at the next char
         return if (peekPos >= sql.length) 0.toChar() else sql[peekPos]
     }
 
-    private fun peek(): Char = peek(1)
+    fun peek(): Char = peek(1)
+
+    fun peek(range: IntRange): String {
+        // -1 because we're already at the next char
+        val start = pos + range.first - 1
+        // Not -1 because substring() takes exclusive end
+        val end = pos + range.last
+        return if (start >= sql.length) {
+            ""
+        } else if (end >= sql.length) {
+            sql.substring(start)
+        } else if (start == end) {
+            sql[start].toString()
+        } else {
+            sql.substring(start, end)
+        }
+    }
 
     fun next(): Char {
         if (pos >= sql.length) return 0.toChar()
@@ -277,15 +314,15 @@ internal class SQLParser(val sql: String) {
     // HELPERS
 
     // For some reason 0 is a valid identifier char, which we don't want...
-    private fun isIdentifier(c: Char) = c.isJavaIdentifierPart() && c != 0.toChar()
+    fun isIdentifier(c: Char) = c.isJavaIdentifierPart() && c != 0.toChar()
 
-    private fun updateStart() {
+    fun updateStart() {
         start = pos
         startLine = line
         startCol = col
     }
 
-    private fun consumeStatement() {
+    fun consumeStatement() {
         if (tokens.isNotEmpty()) {
             val s = sql.substring(startStmt, pos)
             if (s.isNotBlank())
@@ -295,11 +332,11 @@ internal class SQLParser(val sql: String) {
         tokens = mutableListOf()
     }
 
-    private fun addCodeToken(content: String) {
+    fun addCodeToken(content: String) {
         tokens.add(Token(TokenType.CODE, content, startLine, startCol))
     }
 
-    private fun addParamToken(content: String) {
+    fun addParamToken(content: String) {
         tokens.add(Token(TokenType.PARAM, content, startLine, startCol))
     }
 

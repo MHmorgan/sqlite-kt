@@ -1,12 +1,11 @@
+package games.soloscribe.sqlite
+
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
-// This could be rewritten to Kotlin, but it's kinda nice to explore how
-// Java interops with Kotlin, and this is a good example of that.
-@DisplayName("SQLParser Unit Tests")
 class SQLParserTest {
 
     // -------------------------------------------------------------------------
@@ -114,7 +113,18 @@ class SQLParserTest {
                 SplitTestData(
                     "// SELECT 1;\nSELECT 42",
                     arrayOf("// SELECT 1;\nSELECT 42")
-                )
+                ),
+
+                // BEGIN/END block
+
+                SplitTestData(
+                    "BEGIN SELECT 1; SELECT 2; END",
+                    arrayOf("BEGIN SELECT 1; SELECT 2; END")
+                ),
+                SplitTestData(
+                    "BEGIN SELECT 1; END; BEGIN SELECT 2; END",
+                    arrayOf("BEGIN SELECT 1; END;", " BEGIN SELECT 2; END")
+                ),
             )
         }
 

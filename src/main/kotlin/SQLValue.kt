@@ -1,3 +1,5 @@
+package games.soloscribe.sqlite
+
 /**
  * [SQLValue] should be implemented by classes which can be
  * converted to a type that can be understood by the SQL driver.

@@ -1,0 +1,6 @@
+//[sqlite](../../../../index.md)/[games.soloscribe.sqlite](../../index.md)/[SQLite](../index.md)/[SchemaRow](index.md)/[type](type.md)
+
+# type
+
+[jvm]\
+val [type](type.md): [String](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html)

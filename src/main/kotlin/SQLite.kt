@@ -1,12 +1,20 @@
+@file:Suppress("NAME_SHADOWING")
+
+package games.soloscribe.sqlite
+
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
+import java.time.temporal.Temporal
+import java.time.temporal.TemporalAmount
+import java.util.UUID
 
 typealias SQLParams = Map<String, Any?>
 
-open class SQLiteException(msg: String) : IllegalStateException(msg)
+open class SQLiteException(msg: String, cause: Throwable? = null) :
+    SQLException(msg, cause)
 
 class SQLite(private val config: Config) : AutoCloseable {
     private val conn: Connection = DriverManager.getConnection(config.url)!!
@@ -54,6 +62,7 @@ class SQLite(private val config: Config) : AutoCloseable {
      * After closing, [SQLite] should not be used again.
      */
     override fun close() {
+        if (conn.isClosed) return
         conn.close()
     }
 
@@ -84,18 +93,15 @@ class SQLite(private val config: Config) : AutoCloseable {
      */
     private fun <T> exec(sql: String, func: (PreparedStatement) -> T): T {
         val user = Thread.currentThread()
-        if (user != owner) {
-            val msg = "${config.name}: SQLite is not thread-safe: Owner=$owner User=$user"
-            throw SQLiteException(msg)
-        }
+        if (user != owner)
+            err("SQLite is not thread-safe: Owner=$owner User=$user")
 
         return try {
             conn.prepareStatement(sql).use { ps ->
                 func(ps)
             }
         } catch (e: SQLException) {
-            val msg = "${config.name}: SQL error: ${e.message}\n${sql.trimIndent()}"
-            throw SQLiteException(msg)
+            err("SQLite error for statement:\n${sql.trimIndent()}", e)
         }
     }
 
@@ -114,23 +120,23 @@ class SQLite(private val config: Config) : AutoCloseable {
      * If this is not the desired behaviour, check out [multiQuery].
      */
     fun <T> query(sql: String, params: SQLParams, rse: ResultSetExtractor<T>): T {
-        val stmts = sql.parse()
+        val statements = sql.parse()
 
-        if (stmts.isEmpty() && sql.isBlank())
-            throw SQLiteException("${config.name}: Empty query")
-        else if (stmts.isEmpty() && sql.isNotBlank())
-            throw SQLiteException("${config.name}: Invalid query: $sql")
+        if (statements.isEmpty() && sql.isBlank())
+            err("Empty query")
+        else if (statements.isEmpty() && sql.isNotBlank())
+            err("Invalid query: $sql")
 
         // Execute every statement, but the last one.
-        for (i in 0..stmts.size - 2) {
-            val (sql, params) = stmts[i].resolve(params)
+        for (i in 0..statements.size - 2) {
+            val (sql, params) = statements[i].resolve(params)
             exec(sql) { ps ->
                 setParameters(ps, params)
                 ps.execute()
             }
         }
 
-        val (sql, params) = stmts.last().resolve(params)
+        val (sql, params) = statements.last().resolve(params)
         return exec(sql) { ps ->
             setParameters(ps, params)
             val rs = ps.executeQuery()
@@ -169,59 +175,78 @@ class SQLite(private val config: Config) : AutoCloseable {
     fun <T> query(sql: String, rm: RowMapper<T>) =
         query(sql, emptyMap(), rm::mapAll)
 
+    // -------------------------------------------------------------------------
+    //
+    // Batch Update
+    //
+    // -------------------------------------------------------------------------
 
     /**
-     * Execute all the sql statements from [src] with [params]. This should be
-     * used when there are multiple queries in [src], which requires multiple
-     * result sets to be extracted.
-     *
-     * The results are extracted using calling the extension [block] on a
-     * [MultiResult] which allows the caller to control the extraction of
-     * multiple result sets.
+     * Execute the sql statement from [sql] with the [batches] of named
+     * parameters and return an array with the number of affected rows for each
+     * batch.
      */
-    fun <T> multiQuery(sql: String, params: SQLParams, block: MultiResult.() -> T): T {
-        val stmts = sql.parse()
+    fun batchUpdate(sql: String, batches: List<SQLParams>): IntArray {
+        // Missing batch update support could probably be emulated, if needed.
+        if (!conn.metaData.supportsBatchUpdates())
+            err("Batch updates are not supported")
 
-        if (stmts.isEmpty() && sql.isBlank())
-            throw SQLiteException("${config.name}: Empty query")
-        else if (stmts.isEmpty() && sql.isNotBlank())
-            throw SQLiteException("${config.name}: Invalid query: $sql")
+        val statement = sql.parse().singleOrNull()
+            ?: err("Batch SQL must contain exactly one statement:\n$sql")
 
-        val sql = if (params.isEmpty())
-            stmts.joinToString("") { it.resolveSQL() }
-        else
-            stmts.joinToString("") { it.resolveSQL(params) }
-
-        val params = buildList {
-            if (params.isEmpty())
-                return@buildList
-            for (stmt in stmts)
-                addAll(stmt.resolveParams(params))
-        }.toTypedArray()
+        val sql = if (batches.isEmpty()) {
+            statement.resolveSQL()
+        } else {
+            // If the batches are of different sizes we have a problem,
+            // but that's the caller's responsibility.
+            statement.resolveSQL(batches[0])
+        }
 
         return exec(sql) { ps ->
-            setParameters(ps, params)
-            val hasResults = ps.execute()
-            val multiResult = MultiResult(hasResults, ps)
-            val res = multiResult.block()
-            check(!multiResult.hasResults()) {
-                "${config.name}: Multi query block did not consume all results"
+            for (batch in batches) {
+                val params = statement.resolveParams(batch)
+                setParameters(ps, params)
+                ps.addBatch()
             }
-            res
+            ps.executeBatch()
         }
     }
 
+    // -------------------------------------------------------------------------
+    //
+    // Execute
+    //
+    // -------------------------------------------------------------------------
+
     /**
-     * Execute all the sql statements from [sql]. This should be
-     * used when there are multiple queries in [sql], which requires multiple
-     * result sets to be extracted.
+     * Execute the [sql] statements with named [params].
      *
-     * The results are extracted using calling the extension [block] on a
-     * [MultiResult] which allows the caller to control the extraction of
-     * multiple result sets.
+     * If the [sql] contains multiple statements, they are all executed within
+     * the same transaction.
      */
-    fun <T> multiQuery(sql: String, block: MultiResult.() -> T) =
-        multiQuery(sql, emptyMap(), block)
+    fun execute(sql: String, params: SQLParams): Int {
+        var sum: Int? = null
+        val statements = sql.parse()
+
+        transaction {
+            for (statement in statements) {
+                val (sql, args) = statement.resolve(params)
+                exec(sql) { ps ->
+                    setParameters(ps, args)
+                    ps.execute()
+                    val c = ps.updateCount
+                    if (c != -1) sum = (sum ?: 0) + c
+                }
+            }
+        }
+
+        return sum ?: -1
+    }
+
+    /**
+     * Execute the [sql] statements.
+     */
+    fun execute(sql: String) = execute(sql, emptyMap())
 
     // -------------------------------------------------------------------------
     //
@@ -236,12 +261,26 @@ class SQLite(private val config: Config) : AutoCloseable {
         if (params.isEmpty()) return
 
         for ((i, p) in params.withIndex()) {
-            if (p is SQLValue<*>)
-                ps.setObject(i + 1, p.sqlValue())
-            else
-                ps.setObject(i + 1, p)
+            val obj = when (p) {
+                is Temporal,
+                is TemporalAmount,
+                is UUID,
+                    -> p.toString()
+
+                is Enum<*> -> p.name
+                is SQLValue<*> -> p.sqlValue()
+                else -> p
+            }
+
+            ps.setObject(i + 1, obj)
         }
     }
+
+    /**
+     * Throw an [SQLiteException] with the given message and a prefix.
+     */
+    private fun err(msg: String, cause: Throwable? = null): Nothing =
+        throw SQLiteException("${config.name}: $msg", cause)
 
     data class Config(
         val url: String,
@@ -311,107 +350,4 @@ fun interface ResultSetExtractor<T> {
      * Extract data from a [ResultSet].
      */
     fun extract(rs: ResultSet): T
-}
-
-// -------------------------------------------------------------------------
-//
-// MultiResult
-//
-// -------------------------------------------------------------------------
-
-/**
- * A helper class for extracting multiple results from a query.
- *
- * It provides methods (a tiny DDL) for extracting result sets by using
- * [ResultSetExtractor]s and [RowMapper]s.
- */
-class MultiResult(
-    private var moreResults: Boolean,
-    private var ps: PreparedStatement,
-) {
-    private var updateCount = ps.updateCount
-
-    private fun getMoreResults() {
-        moreResults = ps.moreResults
-        // Calling `ps.updateCount` should only be done once for each
-        // result set, so we cache it here.
-        updateCount = ps.updateCount
-    }
-
-    /**
-     * Return `true` if there are more results which hasn't been extracted
-     * yet, and `false` otherwise.
-     */
-    internal fun hasResults(): Boolean {
-        // When `hasResults == false` and `updateCount > -1` it means that
-        // the prepared statement is currently pointing at a DML statement
-        // (INSERT, UPDATE, DELETE) which didn't return a result set.
-        // We continue until we reach a result set or the end of the results.
-        while (!moreResults && updateCount != -1)
-            getMoreResults()
-        return moreResults
-    }
-
-    /**
-     * Get the next [ResultSet] from the query, and extract it with the
-     * given result set extractor.
-     *
-     * @throws NoSuchElementException if there are no more results.
-     */
-    fun <T> next(rse: ResultSetExtractor<T>): T {
-        // When `hasResults == false` and `updateCount > -1` it means that
-        // the prepared statement is currently pointing at a DML statement
-        // (INSERT, UPDATE, DELETE) which didn't return a result set.
-        // We continue until we reach a result set or the end of the results.
-        while (!moreResults && updateCount != -1)
-            getMoreResults()
-
-        if (!moreResults)
-            throw NoSuchElementException()
-
-        val res = rse.extract(ps.resultSet)
-        // This _must_ be done after extracting the result set, because it
-        // has the side effect of closing the current result set.
-        getMoreResults()
-        return res
-    }
-
-    /**
-     * Get the next [ResultSet] from the query, and map it with the given
-     * row mapper.
-     *
-     * Throws [NoSuchElementException] if there are no more results.
-     */
-    fun <T> next(rm: RowMapper<T>): List<Result<T>> = next(rm::mapAll)
-
-    /**
-     * Get all [ResultSet]s from the query, extracting them with the given
-     * result set extractor. Returns a list of the extracted results.
-     */
-    fun <T> all(rse: ResultSetExtractor<T>): List<T> = buildList {
-        while (moreResults || updateCount != -1) {
-            if (moreResults) {
-                val res = rse.extract(ps.resultSet)
-                add(res)
-            }
-            getMoreResults()
-        }
-    }
-
-    /**
-     * Get all [ResultSet]s from the query, mapping them with the given
-     * row mapper. Returns a flattened list of the mapped results.
-     */
-    fun <T> all(rm: RowMapper<T>): List<Result<T>> {
-        val res = buildList {
-            while (moreResults || updateCount != -1) {
-                if (moreResults) {
-                    val res = rm.mapAll(ps.resultSet)
-                    add(res)
-                }
-                getMoreResults()
-            }
-        }
-        return res.flatten()
-    }
 }
