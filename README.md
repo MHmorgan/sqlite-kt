@@ -12,7 +12,9 @@ Usage
 import games.soloscribe.sqlite.SQLite
 
 fun main() {
-    SQLite("sqlite:jdbc::memory:").use { db ->
+    val config = SQLite.Config("jdbc:sqlite::memory:", "test-db")
+
+    SQLite(config).use { db ->
         db.execute("CREATE TABLE test (name)")
         
         val names = listOf(
