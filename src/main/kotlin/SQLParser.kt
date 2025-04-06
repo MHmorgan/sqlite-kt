@@ -1,8 +1,8 @@
 package games.soloscribe.sqlite
 
-typealias ParsedSQL = List<ParsedStatement>
+internal typealias ParsedSQL = List<ParsedStatement>
 
-fun String.parse(): ParsedSQL = SQLParser(this).parse()
+internal fun String.parse(): ParsedSQL = SQLParser(this).parse()
 
 /**
  * A parsed statement is the result of parsing. This contains the
@@ -22,7 +22,7 @@ fun String.parse(): ParsedSQL = SQLParser(this).parse()
  *
  * @suppress
  */
-class ParsedStatement(
+internal class ParsedStatement(
     private val tokens: List<Token>,
     private val sql: String,
 ) {
