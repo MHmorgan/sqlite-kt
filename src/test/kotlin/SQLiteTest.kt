@@ -709,4 +709,49 @@ class SQLiteTest {
             }
         }
     }
+
+    // -------------------------------------------------------------------------
+    //
+    // Foreign Keys
+    //
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Foreign Keys")
+    inner class ForeignKeys {
+        val table = """
+            CREATE TABLE foo (id);
+            CREATE TABLE bar (fk REFERENCES foo (id));
+            
+            INSERT INTO foo (id) VALUES (1), (2);
+            INSERT INTO bar (fk) VALUES (1), (2), (3), (4);
+        """.trimIndent()
+
+        @Test
+        fun `Foreign Key Constraints`() {
+            // Without foreign key constraints, this should work
+            SQLite(config).use { db ->
+                db.execute(table)
+            }
+
+            // With foreign key constraints, this should fail
+            val config = config.copy(foreignKeys = true)
+            assertThrows<SQLiteException> {
+                SQLite(config).use { db ->
+                    db.execute(table)
+                }
+            }
+        }
+
+        @Test
+        fun `Foreign Key Check`() {
+            SQLite(config).use { db ->
+                db.execute(table)
+
+                assertThrows<SQLiteException> {
+                    db.checkForeignKeys()
+                }
+            }
+        }
+    }
 }
