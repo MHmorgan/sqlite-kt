@@ -188,9 +188,7 @@ class SQLiteTest {
 
                 val res = db.query(sql) { rs, _ ->
                     rs.getInt("ROWID") to rs.getInt("num")
-                }.map {
-                    it.getOrThrow()
-                }
+                }.getOrThrow()
 
                 assertThat(res).containsExactly(
                     1 to 42,
@@ -428,7 +426,7 @@ class SQLiteTest {
 
             val res = db.query(sql, params) { rs, _ ->
                 rs.getInt("num")
-            }.getAllOrThrow()
+            }.getOrThrow()
             assertThat(res).containsExactly(42, 69, 420, 666, 1337)
         }
     }
@@ -532,7 +530,7 @@ class SQLiteTest {
                         rs.getString("armor"),
                         rs.getString("faction")
                     )
-                }.getAllOrThrow()
+                }.getOrThrow()
             }
 
             val factions = myFactions + yourFactions
@@ -710,19 +708,5 @@ class SQLiteTest {
                 }
             }
         }
-    }
-
-    // -------------------------------------------------------------------------
-    //
-    // Helpers
-    //
-    // -------------------------------------------------------------------------
-
-    fun <T> List<Result<T>>.getAllOrThrow(): List<T> {
-        return map { it.getOrThrow() }
-    }
-
-    fun <T> List<Result<T>>.getSingleOrThrow(): T {
-        return map { it.getOrThrow() }.single()
     }
 }

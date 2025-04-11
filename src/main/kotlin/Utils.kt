@@ -9,6 +9,46 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
+ * Unwrap all the results in the list. Throws an exception if any of the
+ * results are a failure, otherwise returns a list of the unwrapped results.
+ *
+ * Throws the first encountered exception, with all other exceptions
+ * added as suppressed exceptions.
+ *
+ * @throws Throwable
+ */
+fun <T> List<Result<T>>.getOrThrow(): List<T> {
+    val res = mutableListOf<T>()
+    var exc: Throwable? = null
+
+    for (item in this) {
+        if (item.isFailure) {
+            if (exc == null)
+                exc = item.exceptionOrNull()!!
+            else
+                exc.addSuppressed(item.exceptionOrNull()!!)
+        } else {
+            res.add(item.getOrThrow())
+        }
+    }
+
+    if (exc != null) throw exc
+    return res
+}
+
+/**
+ * Unwrap the result of the list, expecting a single result.
+ * Throws an exception if it encounters any failure, or if the list
+ * contains more than one result.
+ *
+ * @see single
+ * @see getOrThrow
+ */
+fun <T> List<Result<T>>.getSingleOrThrow(): T {
+    return getOrThrow().single()
+}
+
+/**
  * Get an enum from the result set. [Enum.name] is used to match the enum
  * constant.
  *
