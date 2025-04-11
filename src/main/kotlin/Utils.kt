@@ -38,14 +38,28 @@ fun <T> List<Result<T>>.getOrThrow(): List<T> {
 
 /**
  * Unwrap the result of the list, expecting a single result.
+ *
  * Throws an exception if it encounters any failure, or if the list
- * contains more than one result.
+ * is empty or contains more than one result.
  *
  * @see single
  * @see getOrThrow
  */
 fun <T> List<Result<T>>.getSingleOrThrow(): T {
     return getOrThrow().single()
+}
+
+/**
+ * Unwrap the result of the list, expecting a single result.
+ * Returns `null` if the list is empty, or if it contains more than one result.
+ *
+ * Throws an exception if it encounters any failures in the list.
+ *
+ * @see singleOrNull
+ * @see getOrThrow
+ */
+fun <T> List<Result<T>>.getSingleOrNull(): T? {
+    return getOrThrow().singleOrNull()
 }
 
 /**
