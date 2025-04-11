@@ -5,6 +5,8 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.reflect.KClass
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Get an enum from the result set. [Enum.name] is used to match the enum
@@ -33,6 +35,24 @@ fun <T : Enum<T>> ResultSet.getEnum(column: String, clazz: KClass<T>): T? =
  * @throws NumberFormatException if the column value is not a valid integer.
  */
 fun ResultSet.getInteger(column: String) = getString(column)?.toInt()
+
+// -----------------------------------------------------------------------------
+//
+// Kotlin types
+//
+// -----------------------------------------------------------------------------
+
+@OptIn(ExperimentalUuidApi::class)
+fun ResultSet.getUuid(column: String): Uuid? {
+    val str = getString(column) ?: return null
+    return Uuid.parse(str)
+}
+
+// -----------------------------------------------------------------------------
+//
+// Java types
+//
+// -----------------------------------------------------------------------------
 
 /**
  * Get a [UUID] object from the result set. This does not require the database
