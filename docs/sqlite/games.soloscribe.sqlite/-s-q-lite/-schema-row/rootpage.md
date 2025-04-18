@@ -3,4 +3,4 @@
 # rootpage
 
 [jvm]\
-val [rootpage](rootpage.md): [Int](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html)
+val [rootpage](rootpage.md): [Int](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-int/index.html)

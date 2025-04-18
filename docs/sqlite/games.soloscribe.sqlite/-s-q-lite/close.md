@@ -5,6 +5,6 @@
 [jvm]\
 open override fun [close](close.md)()
 
-Close the sqlite connection. This should not be called directly, but rather used with the [use](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/index.html) function.
+Close the sqlite connection. This should not be called directly, but rather used with the use function.
 
 After closing, [SQLite](index.md) should not be used again.

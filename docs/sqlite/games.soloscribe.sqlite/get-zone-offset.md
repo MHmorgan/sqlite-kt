@@ -3,7 +3,7 @@
 # getZoneOffset
 
 [jvm]\
-fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getZoneOffset](get-zone-offset.md)(column: [String](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html)): [ZoneOffset](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneOffset.html)?
+fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getZoneOffset](get-zone-offset.md)(column: [String](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html)): [ZoneOffset](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneOffset.html)?
 
 Get a [ZoneOffset](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneOffset.html) from the result set. The zone offset is parsed using the formatter provided.
 

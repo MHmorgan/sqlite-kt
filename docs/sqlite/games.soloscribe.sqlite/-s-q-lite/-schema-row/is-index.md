@@ -3,4 +3,4 @@
 # isIndex
 
 [jvm]\
-val [isIndex](is-index.md): [Boolean](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html)
+val [isIndex](is-index.md): [Boolean](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-boolean/index.html)

@@ -3,7 +3,7 @@
 # getDuration
 
 [jvm]\
-fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getDuration](get-duration.md)(column: [String](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html)): [Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html)?
+fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getDuration](get-duration.md)(column: [String](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html)): [Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html)?
 
 Get a [Duration](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html) from the result set.
 

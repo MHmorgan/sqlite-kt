@@ -3,7 +3,7 @@
 # getPeriod
 
 [jvm]\
-fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getPeriod](get-period.md)(column: [String](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html)): [Period](https://docs.oracle.com/javase/8/docs/api/java/time/Period.html)?
+fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getPeriod](get-period.md)(column: [String](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html)): [Period](https://docs.oracle.com/javase/8/docs/api/java/time/Period.html)?
 
 Get a [Period](https://docs.oracle.com/javase/8/docs/api/java/time/Period.html) from the result set.
 

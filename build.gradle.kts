@@ -5,10 +5,10 @@
 
 plugins {
     val kotlinVersion = "2.1.20"
-
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("org.jetbrains.dokka") version "2.0.0"
+
+    id("org.jetbrains.dokka") version "1.9.20"
 
     `java-library`
 }

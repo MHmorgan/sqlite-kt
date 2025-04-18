@@ -3,7 +3,7 @@
 # getDayOfWeek
 
 [jvm]\
-fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getDayOfWeek](get-day-of-week.md)(column: [String](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html)): [DayOfWeek](https://docs.oracle.com/javase/8/docs/api/java/time/DayOfWeek.html)?
+fun [ResultSet](https://docs.oracle.com/javase/8/docs/api/java/sql/ResultSet.html).[getDayOfWeek](get-day-of-week.md)(column: [String](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-string/index.html)): [DayOfWeek](https://docs.oracle.com/javase/8/docs/api/java/time/DayOfWeek.html)?
 
 Get a [DayOfWeek](https://docs.oracle.com/javase/8/docs/api/java/time/DayOfWeek.html) from the result set.
 

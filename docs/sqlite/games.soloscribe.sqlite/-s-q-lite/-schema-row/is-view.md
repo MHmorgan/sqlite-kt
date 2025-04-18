@@ -3,4 +3,4 @@
 # isView
 
 [jvm]\
-val [isView](is-view.md): [Boolean](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html)
+val [isView](is-view.md): [Boolean](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin/-boolean/index.html)
