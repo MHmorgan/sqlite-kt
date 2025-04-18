@@ -3,7 +3,11 @@ Kotlin SQLite
 
 [Documentation](docs/index.md)
 
-Helper class for SQLite database in Kotlin, only aimed at the JVM platform.
+Helper library for SQLite database in Kotlin, only aimed at the JVM platform.
+
+This is tested using `org.xerial.sqlite-jdbc`, but does not include any
+driver dependency runtime. The user must import the desired driver as a
+dependency, in addition to this library.
 
 Usage
 -----
