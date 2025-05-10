@@ -2,14 +2,13 @@
 
 package games.soloscribe.sqlite
 
-import java.sql.Connection
-import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
-import java.util.UUID
+import java.util.*
+import javax.sql.DataSource
 
 typealias SQLParams = Map<String, Any?>
 
@@ -17,7 +16,7 @@ open class SQLiteException(msg: String, cause: Throwable? = null) :
     SQLException(msg, cause)
 
 class SQLite(private val config: Config) : AutoCloseable {
-    private val conn: Connection = DriverManager.getConnection(config.url)!!
+    private val conn = config.dataSource.connection!!
 
     /**
      * The thread that owns the librarian is the only one allowed to use it.
@@ -303,7 +302,7 @@ class SQLite(private val config: Config) : AutoCloseable {
         throw SQLiteException("${config.name}: $msg", cause)
 
     data class Config(
-        val url: String,
+        val dataSource: DataSource,
         val name: String,
         val foreignKeys: Boolean? = null,
     )
