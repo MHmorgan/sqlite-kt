@@ -11,6 +11,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
+import org.sqlite.SQLiteConfig
+import org.sqlite.SQLiteDataSource
 import java.math.BigDecimal
 import java.time.*
 import java.util.*
@@ -18,7 +20,7 @@ import java.util.*
 class SQLiteTest {
 
     val config = SQLite.Config(
-        url = "jdbc:sqlite::memory:",
+        dataSource = SQLiteDataSource(),
         name = "test-db"
     )
 
@@ -719,6 +721,16 @@ class SQLiteTest {
     @Nested
     @DisplayName("Foreign Keys")
     inner class ForeignKeys {
+        val fkConfig = SQLite.Config(
+            dataSource = run {
+                val conf = SQLiteConfig().apply {
+                    enforceForeignKeys(true)
+                }
+                SQLiteDataSource(conf)
+            },
+            name = "test-db-fk",
+        )
+
         val table = """
             CREATE TABLE foo (id);
             CREATE TABLE bar (fk REFERENCES foo (id));
@@ -735,9 +747,8 @@ class SQLiteTest {
             }
 
             // With foreign key constraints, this should fail
-            val config = config.copy(foreignKeys = true)
             assertThrows<SQLiteException> {
-                SQLite(config).use { db ->
+                SQLite(fkConfig).use { db ->
                     db.execute(table)
                 }
             }

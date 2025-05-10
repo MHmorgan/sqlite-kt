@@ -28,15 +28,6 @@ class SQLite(private val config: Config) : AutoCloseable {
 
     private var nestCnt: Int = 0
 
-    init {
-        config.foreignKeys?.let { fk ->
-            if (fk)
-                executeRaw("PRAGMA foreign_keys=ON")
-            else
-                executeRaw("PRAGMA foreign_keys=OFF")
-        }
-    }
-
     /**
      * Run the given [func] inside a transaction, committing if it succeeds
      * and rolling back if it fails.
@@ -301,11 +292,7 @@ class SQLite(private val config: Config) : AutoCloseable {
     private fun err(msg: String, cause: Throwable? = null): Nothing =
         throw SQLiteException("${config.name}: $msg", cause)
 
-    data class Config(
-        val dataSource: DataSource,
-        val name: String,
-        val foreignKeys: Boolean? = null,
-    )
+    data class Config(val dataSource: DataSource, val name: String)
 
     data class SchemaRow(
         val type: String,
