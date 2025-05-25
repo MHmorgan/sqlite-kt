@@ -1,5 +1,6 @@
 package games.soloscribe.sqlite
 
+import kotlinx.serialization.json.Json
 import java.sql.ResultSet
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -89,6 +90,14 @@ fun <T : Enum<T>> ResultSet.getEnum(column: String, clazz: KClass<T>): T? =
  * @throws NumberFormatException if the column value is not a valid integer.
  */
 fun ResultSet.getInteger(column: String) = getString(column)?.toInt()
+
+/**
+ * Get a JSON object from the result set, decoded with the provided [Json] instance.
+ */
+inline fun <reified T> ResultSet.getJson(column: String, json: Json = Json): T? {
+    val str = getString(column) ?: return null
+    return json.decodeFromString<T>(str)
+}
 
 // -----------------------------------------------------------------------------
 //

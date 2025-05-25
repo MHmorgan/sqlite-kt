@@ -405,6 +405,20 @@ class SQLiteTest {
             }
             assertThat(actual).isEqualTo(expect)
         }
+
+        @Test
+        fun jsonValue() {
+            @Serializable
+            data class Character(val name: String) : SQLValue<String> {
+                override fun sqlValue() = Json.encodeToString(this)
+            }
+
+            val expect = Character("Peter")
+            val actual: Character = test(expect) { rs, _ ->
+                rs.getJson("value")!!
+            }
+            assertThat(actual).isEqualTo(expect)
+        }
     }
 
     // -------------------------------------------------------------------------
