@@ -419,6 +419,15 @@ class SQLiteTest {
             }
             assertThat(actual).isEqualTo(expect)
         }
+
+        @Test
+        fun getConverted() {
+            val expect = 24
+            val actual = test(expect) { rs, _ ->
+                rs.get("value") { it.toInt() }
+            }
+            assertThat(actual).isEqualTo(expect)
+        }
     }
 
     // -------------------------------------------------------------------------

@@ -99,6 +99,14 @@ inline fun <reified T> ResultSet.getJson(column: String, json: Json = Json): T? 
     return json.decodeFromString<T>(str)
 }
 
+/**
+ * Get a value from the result set, converted from a string representation.
+ */
+inline fun <T> ResultSet.get(column: String, convert: (String) -> T): T? {
+    val str = getString(column) ?: return null
+    return convert(str)
+}
+
 // -----------------------------------------------------------------------------
 //
 // Kotlin types
