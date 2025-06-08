@@ -2,6 +2,7 @@
 
 package games.soloscribe.sqlite
 
+import org.intellij.lang.annotations.Language
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
@@ -122,7 +123,11 @@ class SQLite(private val config: Config) : AutoCloseable {
      * return a result. The rest will be executed and discarded.
      * If this is not the desired behaviour, check out [multiQuery].
      */
-    fun <T> query(sql: String, params: SQLParams, rse: ResultSetExtractor<T>): T {
+    fun <T> query(
+        @Language("SQLite") sql: String,
+        params: SQLParams,
+        rse: ResultSetExtractor<T>
+    ): T {
         val statements = sql.parse()
 
         if (statements.isEmpty() && sql.isBlank())
@@ -154,7 +159,7 @@ class SQLite(private val config: Config) : AutoCloseable {
      * return a result. The rest will be executed and discarded.
      * If this is not the desired behaviour, check out [multiQuery].
      */
-    fun <T> query(sql: String, rse: ResultSetExtractor<T>) =
+    fun <T> query(@Language("SQLite") sql: String, rse: ResultSetExtractor<T>) =
         query(sql, emptyMap(), rse)
 
     /**
@@ -165,7 +170,7 @@ class SQLite(private val config: Config) : AutoCloseable {
      * return a result. The rest will be executed and discarded.
      * If this is not the desired behaviour, check out [multiQuery].
      */
-    fun <T> query(sql: String, params: SQLParams, rm: RowMapper<T>) =
+    fun <T> query(@Language("SQLite") sql: String, params: SQLParams, rm: RowMapper<T>) =
         query(sql, params, rm::mapAll)
 
     /**
@@ -175,7 +180,7 @@ class SQLite(private val config: Config) : AutoCloseable {
      * return a result. The rest will be executed and discarded.
      * If this is not the desired behaviour, check out [multiQuery].
      */
-    fun <T> query(sql: String, rm: RowMapper<T>) =
+    fun <T> query(@Language("SQLite") sql: String, rm: RowMapper<T>) =
         query(sql, emptyMap(), rm::mapAll)
 
     // -------------------------------------------------------------------------
@@ -189,7 +194,7 @@ class SQLite(private val config: Config) : AutoCloseable {
      * parameters and return an array with the number of affected rows for each
      * batch.
      */
-    fun batchUpdate(sql: String, batches: List<SQLParams>): IntArray {
+    fun batchUpdate(@Language("SQLite") sql: String, batches: List<SQLParams>): IntArray {
         // Missing batch update support could probably be emulated, if needed.
         if (!conn.metaData.supportsBatchUpdates())
             err("Batch updates are not supported")
@@ -227,7 +232,7 @@ class SQLite(private val config: Config) : AutoCloseable {
      * If the [sql] contains multiple statements, they are all executed within
      * the same transaction.
      */
-    fun execute(sql: String, params: SQLParams): Int {
+    fun execute(@Language("SQLite") sql: String, params: SQLParams): Int {
         var sum: Int? = null
         val statements = sql.parse()
 
@@ -249,7 +254,7 @@ class SQLite(private val config: Config) : AutoCloseable {
     /**
      * Execute the [sql] statements.
      */
-    fun execute(sql: String) = execute(sql, emptyMap())
+    fun execute(@Language("SQLite") sql: String) = execute(sql, emptyMap())
 
     private fun executeRaw(sql: String): Int {
         return exec(sql) { ps ->

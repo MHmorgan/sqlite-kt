@@ -1,5 +1,7 @@
 package games.soloscribe.sqlite
 
+import org.intellij.lang.annotations.Language
+
 @DslMarker
 annotation class SQLDsl
 
@@ -21,7 +23,7 @@ class SQLBuilder {
 
     private val params = mutableMapOf<String, Any?>()
 
-    operator fun String.unaryPlus(): StringBuilder =
+    operator fun @receiver:Language("SQLite") String.unaryPlus(): StringBuilder =
         query.append(this).append(" ")
 
     fun params() = params.toMap()
