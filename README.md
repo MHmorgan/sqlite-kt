@@ -13,7 +13,7 @@ Usage
 -----
 
 ```kotlin
-import games.soloscribe.sqlite.SQLite
+import dev.hirth.sqlite.SQLite
 
 fun main() {
     val config = SQLite.Config("jdbc:sqlite::memory:", "test-db")

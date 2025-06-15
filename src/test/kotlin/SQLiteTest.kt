@@ -1,6 +1,6 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

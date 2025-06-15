@@ -1,4 +1,4 @@
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 /**
  * [SQLReader] should be implemented by objects to allow using operator

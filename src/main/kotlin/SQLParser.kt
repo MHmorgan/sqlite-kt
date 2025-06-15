@@ -1,4 +1,4 @@
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 internal typealias ParsedSQL = List<ParsedStatement>
 

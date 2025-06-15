@@ -13,7 +13,7 @@ plugins {
     `java-library`
 }
 
-group = "games.soloscribe"
+group = "dev.hirth"
 
 repositories {
     mavenCentral()

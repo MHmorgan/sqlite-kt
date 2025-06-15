@@ -1,6 +1,6 @@
 @file:Suppress("NAME_SHADOWING")
 
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 import org.intellij.lang.annotations.Language
 import java.sql.PreparedStatement
