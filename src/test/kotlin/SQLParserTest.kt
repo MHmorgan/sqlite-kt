@@ -1,4 +1,4 @@
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

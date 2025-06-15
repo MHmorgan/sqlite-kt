@@ -1,4 +1,4 @@
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 import kotlinx.serialization.json.Json
 import java.sql.ResultSet

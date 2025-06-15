@@ -1,4 +1,4 @@
-package games.soloscribe.sqlite
+package dev.hirth.sqlite
 
 /**
  * [SQLValue] should be implemented by classes which can be
