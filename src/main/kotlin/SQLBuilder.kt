@@ -26,8 +26,14 @@ class SQLBuilder {
     operator fun @receiver:Language("SQLite") String.unaryPlus(): StringBuilder =
         query.append(this).append(" ")
 
+    /**
+     * Returns the parameters of the query.
+     */
     fun params() = params.toMap()
 
+    /**
+     * Returns the built SQL string.
+     */
     fun sql(): String {
         val sql = buildString {
             for ((i, pair) in ctes.withIndex()) {
@@ -48,6 +54,13 @@ class SQLBuilder {
      */
     fun setParam(name: String, value: Any?) {
         params[name] = value
+    }
+
+    /**
+     * Add the query parameters of the given [map].
+     */
+    fun addParams(map: Map<String, Any?>) {
+        params.putAll(map)
     }
 
     /**

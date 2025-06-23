@@ -22,19 +22,19 @@ package dev.hirth.sqlite
  * }
  * ```
  */
-interface SQLReader<K, V> {
+interface SQLReader<I, T> {
     /**
      * Read all values from the database.
      */
-    operator fun invoke(): List<V>
+    operator fun invoke(): List<T>
 
     /**
      * Read a specific value from the database.
      */
-    operator fun get(key: K): V?
+    operator fun get(identifier: I): T?
 
     /**
      * Check if a specific value exists in the database.
      */
-    operator fun contains(key: K): Boolean = get(key) != null
+    operator fun contains(identifier: I): Boolean = get(identifier) != null
 }

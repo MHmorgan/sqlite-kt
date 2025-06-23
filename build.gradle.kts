@@ -11,6 +11,7 @@ plugins {
     id("org.jetbrains.dokka") version "1.9.20"
 
     `java-library`
+    `java-test-fixtures`
 }
 
 group = "dev.hirth"
@@ -21,6 +22,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.slf4j:slf4j-api:2.0.10")
 
     testImplementation("org.xerial:sqlite-jdbc:3.49.1.0")
 
@@ -29,6 +31,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.1")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    testFixturesImplementation("org.assertj:assertj-core:3.27.3")
 }
 
 kotlin {
