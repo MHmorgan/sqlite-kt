@@ -1,8 +1,6 @@
 🗃️ Kotlin SQLite
 ================
 
-[📚 Documentation](docs/index.md)
-
 A comprehensive helper library for SQLite database operations in Kotlin, designed specifically for the JVM platform.
 
 This library is tested using `org.xerial.sqlite-jdbc`, but does not include any driver dependency at runtime.
