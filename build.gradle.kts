@@ -42,7 +42,3 @@ kotlin {
 tasks.named<Test>("test") {
     useJUnitPlatform()
 }
-
-tasks.dokkaGfm {
-    outputDirectory.set(file("$rootDir/docs"))
-}
