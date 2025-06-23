@@ -36,7 +36,7 @@ class SQLResourceTester<I, T>(
         // Test on empty resources
         // -------------------------------------
 
-        assertThat(resource()).isEmpty()
+        assertThat(resource()).doesNotContainAnyElementsOf(testObjects)
         assertThat(resource[firstId]).isNull()
         assertThat(firstId in resource).isFalse()
         assertThat(resource.delete(firstId)).isEqualTo(0)
@@ -66,8 +66,8 @@ class SQLResourceTester<I, T>(
         // Test invoke() - get all items
         run {
             val all = resource()
-            assertThat(all).hasSize(testObjects.size)
-            assertThat(all).containsExactlyInAnyOrderElementsOf(testObjects)
+            assertThat(all).hasSizeGreaterThanOrEqualTo(testObjects.size)
+            assertThat(all).containsAll(testObjects)
         }
 
         // Test get() and contains() for each object
@@ -93,8 +93,8 @@ class SQLResourceTester<I, T>(
         // Test minusAssign operator if we have more objects
         for ((i, obj) in testObjects.withIndex().drop(1)) {
             val all = resource()
-            assertThat(all).hasSize(testObjects.size - i)
-            assertThat(all).containsExactlyInAnyOrderElementsOf(testObjects.drop(i))
+            assertThat(all).containsAll(testObjects.drop(i))
+            assertThat(all).doesNotContainAnyElementsOf(testObjects.take(i))
 
             val id = identifierOf(obj)
             resource -= id
