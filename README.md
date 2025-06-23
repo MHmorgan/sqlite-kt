@@ -3,20 +3,21 @@
 
 [📚 Documentation](docs/index.md)
 
-Your friendly neighborhood SQLite companion! 🦸‍♂️ A comprehensive helper library for SQLite database operations in Kotlin, designed specifically for the JVM platform. Because who says working with databases can't be fun?
+A comprehensive helper library for SQLite database operations in Kotlin, designed specifically for the JVM platform.
 
-This library is tested using `org.xerial.sqlite-jdbc`, but doesn't include any driver dependency at runtime—we believe in freedom of choice! 🆓 Users must import their desired SQLite JDBC driver as a dependency alongside this library.
+This library is tested using `org.xerial.sqlite-jdbc`, but does not include any driver dependency at runtime.
+Users must import their desired SQLite JDBC driver as a dependency alongside this library.
 
 ## ✨ Features
 
 - 🛡️ **Type-safe database operations** with comprehensive type conversion utilities
-- 🏷️ **Named parameter support** for SQL queries with automatic parameter parsing (no more wondering what `?` means!)
+- 🏷️ **Named parameter support** for SQL queries with automatic parameter parsing
 - 🏗️ **SQL Builder DSL** for dynamic query construction
 - 🗂️ **Resource abstraction** for object-relational mapping patterns
-- 💸 **Transaction management** with automatic rollback on exceptions (oops protection included!)
+- 💸 **Transaction management** with automatic rollback on exceptions
 - ⚡ **Batch operations** for efficient bulk data processing
 - 🎯 **Extensive type support** including Java time types, UUIDs, enums, and JSON
-- 📦 **SQL Collections** for complex parameter handling (lists, pairs, and more!)
+- 📦 **SQL Collections** for complex parameter handling (lists, pairs)
 
 ## 🚀 Quick Start
 
@@ -46,12 +47,12 @@ fun main() {
 
 ### 🏛️ SQLite Class
 
-The main database interface providing all the goodies you need:
+The main database interface providing:
 
 - 🔍 **Query execution**: `query()`, `execute()`, `batchUpdate()`
 - 💰 **Transaction management**: `transaction { ... }`
 - 🏗️ **Schema operations**: `schema()`, `checkForeignKeys()`
-- 🧹 **Resource management**: Implements `AutoCloseable` (because cleanup matters!)
+- 🧹 **Resource management**: Implements `AutoCloseable`
 
 ```kotlin
 val config = SQLite.Config(dataSource, "my-db")
@@ -67,7 +68,7 @@ SQLite(config).use { db ->
 
 ### 🏷️ Named Parameters
 
-All SQL operations support named parameters using `:paramName` syntax (way cooler than those anonymous `?` placeholders!):
+All SQL operations support named parameters using `:paramName` syntax:
 
 ```kotlin
 val params = mapOf(
@@ -84,7 +85,7 @@ val user = db.query("SELECT * FROM users WHERE name = :name", mapOf("name" to "A
 
 ### 🏗️ SQL Builder DSL
 
-Build dynamic queries with a type-safe DSL (because string concatenation is so last century!):
+Build dynamic queries with a type-safe DSL:
 
 ```kotlin
 val (sql, params) = buildQuery {
@@ -110,7 +111,7 @@ val users = db.query(sql, params) { rs, _ ->
 
 ### 🗂️ SQLResource - Object-Relational Mapping
 
-Abstract base class for table-backed resources with CRUD operations (Create, Read, Update, Delete - the four horsemen of data management!):
+Abstract base class for table-backed resources with CRUD operations:
 
 ```kotlin
 class UserResource(db: SQLite, log: Logger) : SQLResource<Int, User>("users", log, db) {
@@ -155,7 +156,7 @@ users -= 1
 
 ### 🎯 Type Conversion Utilities
 
-Extensive support for converting database values to Kotlin/Java types (no more manual casting headaches!):
+Extensive support for converting database values to Kotlin/Java types:
 
 ```kotlin
 val result = db.query("SELECT * FROM events") { rs, _ ->
@@ -182,7 +183,7 @@ Supported types include:
 
 ### 📦 SQL Collections
 
-Handle complex parameter structures with specialized collection types (because sometimes life gets complicated!):
+Handle complex parameter structures with specialized collection types:
 
 ```kotlin
 // SQLList for comma-separated values
@@ -202,7 +203,7 @@ val complexParam = SQLList("Alice", SQLPair(1, 2), listOf(3, 4), SQLList(5, 6))
 
 ### 🎨 Custom Value Types
 
-Implement `SQLValue` interface for custom type conversion (make your types database-ready!):
+Implement `SQLValue` interface for custom type conversion:
 
 ```kotlin
 enum class UserRole(private val dbValue: String) : SQLValue<String> {
@@ -220,7 +221,7 @@ db.execute("INSERT INTO users (name, role) VALUES (:name, :role)",
 
 ### 💸 Transaction Management
 
-Automatic transaction handling with rollback on exceptions (because mistakes happen, and we've got your back!):
+Automatic transaction handling with rollback on exceptions:
 
 ```kotlin
 db.transaction {
@@ -237,7 +238,7 @@ db.transaction {
 
 ### ⚡ Batch Operations
 
-Efficient bulk data processing (when you need to move mountains of data!):
+Efficient bulk data processing:
 
 ```kotlin
 val users = listOf(
@@ -252,7 +253,7 @@ println("Inserted ${results.sum()} users")
 
 ### 🔍 Schema Introspection
 
-Inspect database schema programmatically (peek behind the curtain!):
+Inspect database schema programmatically:
 
 ```kotlin
 val schema = db.schema()
@@ -284,7 +285,7 @@ val config = SQLite.Config(dataSource, "my-app")
 
 ## 🛡️ Error Handling
 
-The library provides `SQLiteException` for database-specific errors (when things go sideways, we tell you why!):
+The library provides `SQLiteException` for database-specific errors:
 
 ```kotlin
 try {
@@ -296,7 +297,7 @@ try {
 
 ## 🧪 Testing Support
 
-The library includes `SQLResourceTester` for comprehensive testing of `SQLResource` implementations (because untested code is just a wish!):
+The library includes `SQLResourceTester` for comprehensive testing of `SQLResource` implementations:
 
 ```kotlin
 @Test
@@ -313,4 +314,4 @@ fun testUserResource() {
 
 ## ⚠️ Thread Safety
 
-SQLite connections are not thread-safe. Each thread should use its own `SQLite` instance. (Share your toys, but not your database connections!) 🧵
+SQLite connections are not thread-safe. Each thread should use its own `SQLite` instance.
