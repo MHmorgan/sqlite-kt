@@ -1,1 +1,1 @@
-guidelines.md
+../.junie/guidelines.md
