@@ -428,6 +428,15 @@ class SQLiteTest {
             }
             assertThat(actual).isEqualTo(expect)
         }
+
+        @Test
+        fun instant() {
+            val expect = Instant.ofEpochMilli(1234567890123)
+            val actual = test(expect) { rs, _ ->
+                rs.getInstant("value")
+            }
+            assertThat(actual).isEqualTo(expect)
+        }
     }
 
     // -------------------------------------------------------------------------

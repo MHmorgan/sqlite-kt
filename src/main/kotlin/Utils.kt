@@ -357,3 +357,13 @@ fun ResultSet.getPeriod(column: String): Period? {
     val str = getString(column) ?: return null
     return Period.parse(str)
 }
+
+/**
+ * Get an [Instant] from the result set.
+ *
+ * @see Instant.parse
+ */
+fun ResultSet.getInstant(column: String): Instant? {
+    val str = getString(column) ?: return null
+    return Instant.parse(str)
+}
