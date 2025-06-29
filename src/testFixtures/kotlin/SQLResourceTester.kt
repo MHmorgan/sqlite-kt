@@ -2,6 +2,8 @@ package dev.hirth.sqlite
 
 import org.assertj.core.api.Assertions.assertThat
 
+// @Todo DSL for SQLResourceTester?
+
 /**
  * A utility class for testing instances of [SQLResource].
  *

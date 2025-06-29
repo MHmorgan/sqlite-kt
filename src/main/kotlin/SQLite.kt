@@ -239,8 +239,8 @@ class SQLite(private val config: Config) : AutoCloseable {
         val statements = sql.parse()
 
         transaction {
-            for (statement in statements) {
-                val (sql, args) = statement.resolve(params)
+            for (stmt in statements) {
+                val (sql, args) = stmt.resolve(params)
                 exec(sql) { ps ->
                     setParameters(ps, args)
                     ps.execute()
@@ -257,6 +257,73 @@ class SQLite(private val config: Config) : AutoCloseable {
      * Execute the [sql] statements.
      */
     fun execute(@Language("SQLite") sql: String) = execute(sql, emptyMap())
+
+    /**
+     * Executes a given SQL query with parameters and maps the generated keys
+     * using the provided key mapper. This method processes multiple SQL
+     * statements if present, executes them within a transaction, and collects
+     * the generated keys.
+     *
+     * The generated key column should be indexed using column `1` (ex: `rs.getString(1)`)
+     *
+     * @param sql the SQL query containing one or more statements to execute
+     * @param params the parameters to bind to the SQL query
+     * @param keyMapper a mapper to convert rows of the resulting keyset into objects of type T
+     * @return a list of results, each result wrapping the mapped keys of type T
+     */
+    fun <T> executeGetKeys(
+        @Language("SQLite") sql: String,
+        params: SQLParams,
+        keyMapper: RowMapper<T>
+    ): List<Result<T>> {
+        val keys = mutableListOf<Result<T>>()
+        val statements = sql.parse()
+
+        transaction {
+            for (stmt in statements) {
+                val (sql, args) = stmt.resolve(params)
+                exec(sql) { ps ->
+                    setParameters(ps, args)
+                    ps.execute()
+                    keys += ps.generatedKeys.use { rs ->
+                        keyMapper.mapAll(rs)
+                    }
+                }
+            }
+        }
+
+        return keys
+    }
+
+    /**
+     * Executes a given SQL query and maps the generated keys using the provided key mapper.
+     * This method processes the SQL statement and collects the generated keys.
+     *
+     * The generated key column should be indexed using column `1` (ex: `rs.getString(1)`)
+     *
+     * @param sql the SQL query to execute
+     * @param keyMapper a mapper to convert rows of the resulting keyset into objects of type T
+     */
+    fun <T> executeGetKeys(@Language("SQLite") sql: String, keyMapper: RowMapper<T>) =
+        executeGetKeys(sql, emptyMap(), keyMapper)
+
+    /**
+     * Executes the given SQL query with the provided parameters and maps the
+     * generated keys to integers.
+     *
+     * @param sql the SQL query containing one or more statements to execute
+     * @param params the parameters to bind to the SQL query
+     */
+    fun executeGetKeys(@Language("SQLite") sql: String, params: SQLParams) =
+        executeGetKeys(sql, params) { rs, _ -> rs.getLong(1) }
+
+    /**
+     * Executes the given SQL query and maps the generated keys to integers.
+     *
+     * @param sql the SQL query to execute
+     */
+    fun executeGetKeys(@Language("SQLite") sql: String) =
+        executeGetKeys(sql, emptyMap()) { rs, _ -> rs.getLong(1) }
 
     private fun executeRaw(sql: String): Int {
         return exec(sql) { ps ->

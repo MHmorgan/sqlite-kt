@@ -139,6 +139,35 @@ abstract class SQLResource<I, T>(
     }
 
     /**
+     * Inserts a given item into the database and retrieves the
+     * generated integer key for the newly inserted record.
+     *
+     * @param item The item to insert into the database.
+     * @return The generated key for the inserted item.
+     */
+    fun insertGetKey(item: T): Long {
+        log.trace("Storing {} item", name)
+        return db.executeGetKeys(insertSql, params(item))
+            .getSingleOrThrow()
+    }
+
+    /**
+     * Insert a single item of the resource and retrieve the generated key
+     * using a custom [RowMapper].
+     *
+     * The generated key column should be indexed using column `1`
+     * (ex: `rs.getString(1)`).
+     *
+     * @param item The item to insert into the database.
+     * @return The generated key for the inserted item.
+     */
+    fun <K> insertGetKey(item: T, keyMapper: RowMapper<K>): K {
+        log.trace("Storing {} item", name)
+        return db.executeGetKeys(insertSql, params(item), keyMapper)
+            .getSingleOrThrow()
+    }
+
+    /**
      * Insert a single item of the resource.
      *
      * @see insertSql

@@ -842,4 +842,49 @@ class SQLiteTest {
             }
         }
     }
+
+    // -------------------------------------------------------------------------
+    //
+    // Generated Keys
+    //
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Generated Keys")
+    inner class GeneratedKeys {
+
+        @Test
+        fun `Generated Keys - Explicit ID column`(): Unit = SQLite(config).use { db ->
+            db.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, name)")
+
+            val sql = "INSERT INTO test (name) VALUES ('John')"
+
+            run {
+                val keys = db.executeGetKeys(sql).getOrThrow()
+                assertThat(keys).containsExactly(1)
+            }
+
+            run {
+                val keys = db.executeGetKeys(sql).getOrThrow()
+                assertThat(keys).containsExactly(2)
+            }
+        }
+
+        @Test
+        fun `Generated Keys - Implicit ROWID column`(): Unit = SQLite(config).use { db ->
+            db.execute("CREATE TABLE test (name)")
+
+            val sql = "INSERT INTO test (name) VALUES ('John')"
+
+            run {
+                val keys = db.executeGetKeys(sql).getOrThrow()
+                assertThat(keys).containsExactly(1)
+            }
+
+            run {
+                val keys = db.executeGetKeys(sql).getOrThrow()
+                assertThat(keys).containsExactly(2)
+            }
+        }
+    }
 }
