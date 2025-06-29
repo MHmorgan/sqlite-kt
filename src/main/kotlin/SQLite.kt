@@ -10,6 +10,8 @@ import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.*
 import javax.sql.DataSource
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 typealias SQLParams = Map<String, Any?>
 
@@ -272,6 +274,7 @@ class SQLite(private val config: Config) : AutoCloseable {
     /**
      * Set the parameters of a prepared statement, properly handling [SQLValue]s.
      */
+    @OptIn(ExperimentalUuidApi::class)
     private fun setParameters(ps: PreparedStatement, params: Array<out Any?>) {
         if (params.isEmpty()) return
 
@@ -279,15 +282,29 @@ class SQLite(private val config: Config) : AutoCloseable {
             val obj = when (p) {
                 is Temporal,
                 is TemporalAmount,
-                is UUID,
                     -> p.toString()
 
+                is UUID -> {
+                    val bytes = ByteArray(16)
+                    bytes.setLongAt(0, p.mostSignificantBits)
+                    bytes.setLongAt(8, p.leastSignificantBits)
+                    bytes
+                }
+
+                is Uuid -> p.toByteArray()
                 is Enum<*> -> p.name
                 is SQLValue<*> -> p.sqlValue()
                 else -> p
             }
 
             ps.setObject(i + 1, obj)
+        }
+    }
+
+    private fun ByteArray.setLongAt(pos: Int, value: Long) {
+        for (i in 0 until Long.SIZE_BYTES) {
+            val n = (Long.SIZE_BYTES - 1 - i) * 8
+            this[pos + i] = (value shr n).toByte()
         }
     }
 

@@ -113,10 +113,31 @@ inline fun <T> ResultSet.get(column: String, convert: (String) -> T): T? {
 //
 // -----------------------------------------------------------------------------
 
+/**
+ * Retrieves a [Uuid] value from the specified column in the `ResultSet`.
+ * This does not require the database driver to support Uuid.
+ *
+ * Will fetch the bytes from the database and determine if the uuid
+ * is stored as bytes or string.
+ *
+ * @param column The name of the column containing the UUID value.
+ * @return The [Uuid] object if the column data is valid, or `null` if the column is `NULL`.
+ * @throws IllegalArgumentException if the column data cannot be interpreted as a valid UUID.
+ */
 @OptIn(ExperimentalUuidApi::class)
 fun ResultSet.getUuid(column: String): Uuid? {
-    val str = getString(column) ?: return null
-    return Uuid.parse(str)
+    val bytes = getBytes(column) ?: return null
+
+    return when (bytes.size) {
+        16 -> Uuid.fromByteArray(bytes)
+        // String format: 11111111-2222-4444-aaaa-ffffffffffff
+        36 -> Uuid.parse(bytes.decodeToString())
+        else -> {
+            val str = bytes.decodeToString()
+            val msg = "$column: Invalid UUID: $str (${bytes.size} bytes)"
+            throw IllegalArgumentException(msg)
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -127,11 +148,44 @@ fun ResultSet.getUuid(column: String): Uuid? {
 
 /**
  * Get a [UUID] object from the result set. This does not require the database
- * driver to support UUIDs, and works with any database.
+ * driver to support UUIDs.
+ *
+ * Will fetch the bytes from the database and determine if the uuid
+ * is stored as bytes or string.
+ *
+ * @param column The name of the column containing the UUID value.
+ * @return The [UUID] object if the column data is valid, or `null` if the column is `NULL`.
+ * @throws IllegalArgumentException if the column data cannot be interpreted as a valid UUID.
  */
 fun ResultSet.getUUID(column: String): UUID? {
-    val str = getString(column) ?: return null
-    return UUID.fromString(str)
+    val bytes = getBytes(column) ?: return null
+
+    return when (bytes.size) {
+        16 -> {
+            val msb = bytes.toLongAt(0)
+            val lsb = bytes.toLongAt(8)
+            UUID(msb, lsb)
+        }
+
+        // String format: 11111111-2222-4444-aaaa-ffffffffffff
+        36 -> UUID.fromString(bytes.decodeToString())
+
+        else -> {
+            val str = bytes.decodeToString()
+            val msg = "$column: Invalid UUID: $str (${bytes.size} bytes)"
+            throw IllegalArgumentException(msg)
+        }
+    }
+}
+
+private fun ByteArray.toLongAt(pos: Int): Long {
+    var value = 0L
+    for (i in pos until pos + 8) {
+        val byte = this[i].toLong() and 0xff
+        val mask = byte shl (7 - i + pos) * 8
+        value = value or mask
+    }
+    return value
 }
 
 /**

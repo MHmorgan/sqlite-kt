@@ -16,6 +16,8 @@ import org.sqlite.SQLiteDataSource
 import java.math.BigDecimal
 import java.time.*
 import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class SQLiteTest {
 
@@ -243,12 +245,55 @@ class SQLiteTest {
         }
 
         @Test
+        @OptIn(ExperimentalUuidApi::class)
         fun uuid() {
-            val expect = UUID.fromString("12345678-1234-5678-1234-567812345678")
-            val actual = test(expect) { rs, _ ->
-                rs.getUUID("value")
+            // Java UUID stored as bytes
+            run {
+                val expect = UUID.fromString("11111111-1234-5678-1234-aaaaaaaaaaaa")
+                val actual = test(expect) { rs, _ ->
+                    rs.getUUID("value")
+                }
+                assertThat(actual).isEqualTo(expect)
             }
-            assertThat(actual).isEqualTo(expect)
+
+            // Java UUID stored as text
+            run {
+                val str = "22222222-1234-5678-1234-bbbbbbbbbbbb"
+                val actual = test(str) { rs, _ ->
+                    rs.getUUID("value")
+                }
+                val expect = UUID.fromString(str)
+                assertThat(actual).isEqualTo(expect)
+            }
+
+            // Bad formatted UUID should fail
+            assertThrows<IllegalArgumentException> {
+                test("bad-uuid") { rs, _ -> rs.getUUID("value") }
+            }
+
+            // Kotlin Uuid stored as bytes
+            run {
+                val expect = Uuid.parse("33333333-1234-5678-1234-cccccccccccc")
+                val actual = test(expect) { rs, _ ->
+                    rs.getUuid("value")
+                }
+                assertThat(actual).isEqualTo(expect)
+            }
+
+            // Kotlin Uuid stored as text
+            run {
+                val str = "44444444-1234-5678-1234-dddddddddddd"
+                val actual = test(str) { rs, _ ->
+                    rs.getUuid("value")
+                }
+                val expect = Uuid.parse(str)
+                assertThat(actual).isEqualTo(expect)
+            }
+
+            // Bad formatted Uuid should fail
+            assertThrows<IllegalArgumentException> {
+                test("bad-uuid") { rs, _ -> rs.getUuid("value") }
+            }
         }
 
         @Test
